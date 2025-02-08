@@ -4,4 +4,4 @@ from .serializers import PlotSerializer
 
 class PlotViewSet(viewsets.ModelViewSet):
     queryset = Plot.objects.all()
-    serializer_class = PlotSerializer
+    serializer_class = PlotSerializer 

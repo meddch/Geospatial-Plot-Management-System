@@ -7,4 +7,4 @@ router.register(r'plots', PlotViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-]
+] 
