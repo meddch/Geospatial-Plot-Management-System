@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:13-3.1
+    environment:
+      POSTGRES_DB: plotsdb
+      POSTGRES_USER: plotsuser
+      POSTGRES_PASSWORD: plotspass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://plotsuser:plotspass@db:5432/plotsdb
+      - DJANGO_SETTINGS_MODULE=config.settings
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
+# version: '3.8'
+
+# services:
+#   db:
+#     image: postgis/postgis:13-3.1
+#     environment:
+#       POSTGRES_DB: plotsdb
+#       POSTGRES_USER: plotsuser
+#       POSTGRES_PASSWORD: plotspass
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
