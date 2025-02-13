@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, GEOSException
 from .models import Plot
+import json
 
 class PlotSerializer(serializers.ModelSerializer):
     coordinates = serializers.JSONField()
@@ -13,11 +14,27 @@ class PlotSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Convert GeoJSON to GEOS geometry
         geojson = validated_data.pop('coordinates')
-        coordinates = GEOSGeometry(str(geojson))
+        try:
+            coordinates = GEOSGeometry(str(geojson))  # Convert GeoJSON to GEOS geometry
+        except GEOSException as e:
+            raise serializers.ValidationError({'coordinates': 'Invalid GeoJSON data.'})
         return Plot.objects.create(coordinates=coordinates, **validated_data)
+
+    def update(self, instance, validated_data):
+        geojson = validated_data.pop('coordinates', None)
+        if geojson:
+            try:
+                coordinates = GEOSGeometry(str(geojson))  # Convert GeoJSON to GEOS geometry
+                instance.coordinates = coordinates
+            except GEOSException as e:
+                raise serializers.ValidationError({'coordinates': 'Invalid GeoJSON data.'})
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
     def to_representation(self, instance):
         # Convert GEOS geometry to GeoJSON
         representation = super().to_representation(instance)
-        representation['coordinates'] = eval(instance.coordinates.json)
-        return representation 
+        representation['coordinates'] = json.loads(instance.coordinates.json)  # Safe conversion
+        return representation

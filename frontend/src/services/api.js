@@ -1,32 +1,24 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const fetchPlots = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/plots/`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching plots:', error);
-    throw error;
-  }
+  console.log(API_URL);
+  const response = await axios.get(API_URL);
+  return response.data;
 };
 
-export const createPlot = async (plotData) => {
-  try {
-    const response = await axios.post(`${API_URL}/plots/`, plotData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating plot:', error);
-    throw error;
-  }
+export const createPlot = async (plot) => {
+  const response = await axios.post(API_URL, plot);
+  return response.data;
 };
 
-export const deletePlot = async (plotId) => {
-  try {
-    await axios.delete(`${API_URL}/plots/${plotId}/`);
-  } catch (error) {
-    console.error('Error deleting plot:', error);
-    throw error;
-  }
-}; 
+export const updatePlot = async (id, plot) => {
+  const response = await axios.put(`${API_URL}${id}/`, plot);
+  return response.data;
+};
+
+export const deletePlot = async (id) => {
+  const response = await axios.delete(`${API_URL}${id}/`);
+  return response.data;
+};
