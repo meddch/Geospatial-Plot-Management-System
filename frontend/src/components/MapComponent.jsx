@@ -35,7 +35,7 @@ const INITIAL_VIEWPORT = {
 
 const INITIAL_PLOT_DATA = {
   name: '',
-  exploitation: 'Bouskoura',
+  exploitation: '',
   crop_type: '',
 };
 
@@ -126,7 +126,7 @@ const MapComponent = () => {
   );
 
   const handleDrawUpdate = useCallback(
-    (e) => {
+    async (e) => {
       const [feature] = e.features;
       const validation = validatePolygon(feature.geometry);
 
@@ -134,6 +134,12 @@ const MapComponent = () => {
         setError(validation.message);
         return;
       }
+
+      const nearestLocation = await fetchNearestLocation(feature.geometry.coordinates[0]);
+      setPlotData((prev) => ({
+        ...prev,
+        exploitation: nearestLocation,
+      }));
 
       setCurrentPolygon({ ...feature, area: validation.area });
     },
@@ -231,7 +237,7 @@ const MapComponent = () => {
     }
   }, [currentPolygon, plotData, selectedPlot]);
 
-  const handlePlotSelect = (plot) => {
+  const handlePlotSelect = useCallback((plot) => {
     setSelectedPlot(plot);
     setPlotData({
       name: plot.name,
@@ -241,24 +247,38 @@ const MapComponent = () => {
     setIsDrawing(false);
     setIsEditing(false);
 
+    // Calculate the bounds of the polygon
     const polygon = turf.polygon(plot.coordinates.coordinates);
-    const bbox = turf.bbox(polygon);
-    const map = mapRef.current.getMap();
-    map.fitBounds(
-      [
-        [bbox[0], bbox[1]],
-        [bbox[2], bbox[3]],
-      ],
-      {
-        padding: 50,
-        duration: 1000,
-      },
-    );
+    const [minLng, minLat, maxLng, maxLat] = turf.bbox(polygon);
+    
+    // Calculate the center point
+    const center = turf.center(polygon);
+    
+    // Calculate appropriate zoom level based on the polygon's size
+    const bounds = {
+      width: Math.abs(maxLng - minLng),
+      height: Math.abs(maxLat - minLat)
+    };
+    
+    const maxBound = Math.max(bounds.width, bounds.height);
+    let zoom = Math.floor(8 - Math.log2(maxBound));
+    
+    // Ensure zoom stays within reasonable bounds
+    zoom = Math.min(Math.max(zoom, 10), 18);
+
+    // Update viewport with new coordinates and zoom
+    setViewport({
+      longitude: center.geometry.coordinates[0],
+      latitude: center.geometry.coordinates[1],
+      zoom: zoom,
+      padding: { top: 50, bottom: 50, left: 50, right: 50 },
+      duration: 1000
+    });
 
     if (drawRef.current) {
       drawRef.current.deleteAll();
     }
-  };
+  }, []);
 
   const handleDeletePlot = async (plotToDelete) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette parcelle ?')) {
