@@ -24,8 +24,8 @@ Before you begin, ensure you have the following installed:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd geospatial-plot-system
+git clone https://github.com/meddch/Geospatial-Plot-Management-System.git
+cd Geospatial-Plot-Management-System
 ```
 
 2. Create environment files:
